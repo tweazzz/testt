@@ -11,6 +11,7 @@ from .permissions import IsAdminSchool,IsSuperAdminOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import *
 from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
 
 class AdminsApi(viewsets.ModelViewSet):
     queryset = Admin.objects.all()
@@ -491,6 +492,15 @@ class KruzhokListApi(viewsets.ModelViewSet):
         serializer = SimpleTeacherSerializer(teachers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @action(detail=False, methods=['post'])
+    def upload_photo(self, request, *args, **kwargs):
+        kruzhok_id = request.data.get('kruzhok_id')
+        kruzhok = get_object_or_404(Kruzhok, id=kruzhok_id)
+        kruzhok.photo = request.data.get('photo')
+        kruzhok.save()
+
+        return Response({'status': 'Photo uploaded successfully.'}, status=201)
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         lessons = instance.lessons.all()

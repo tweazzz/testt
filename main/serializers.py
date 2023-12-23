@@ -337,6 +337,7 @@ class KruzhokSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
+    photo = serializers.ImageField(allow_null=True, required=False)
 
 
     class Meta:
@@ -347,12 +348,17 @@ class KruzhokSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         lessons_data = validated_data.pop('lessons', [])
         teacher_id = validated_data.pop('teacher_id', None)
+        photo = validated_data.pop('photo', None)
 
         kruzhok = Kruzhok.objects.create(**validated_data)
 
         if teacher_id:
             teacher = Teacher.objects.get(id=teacher_id)
             kruzhok.teacher = teacher
+            kruzhok.save()
+
+        if photo:
+            kruzhok.photo = photo
             kruzhok.save()
 
         lesson_order_counter = 1
@@ -365,10 +371,10 @@ class KruzhokSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         lessons_data = validated_data.pop('lessons', [])
         teacher_id = validated_data.pop('teacher_id', None)
+        photo = validated_data.pop('photo', None)
 
         instance.kruzhok_name = validated_data.get('kruzhok_name', instance.kruzhok_name)
         instance.purpose = validated_data.get('purpose', instance.purpose)
-        instance.save()
 
         if teacher_id:
             try:
@@ -377,6 +383,11 @@ class KruzhokSerializer(serializers.ModelSerializer):
                 instance.save()
             except Teacher.DoesNotExist:
                 pass
+
+        if photo:
+            instance.photo = photo
+
+        instance.save()
 
         instance.lessons.all().delete()
         lesson_order_counter = 1
