@@ -339,7 +339,6 @@ class KruzhokSerializer(serializers.ModelSerializer):
     )
     photo = serializers.ImageField(allow_null=True, required=False)
 
-
     class Meta:
         model = Kruzhok
         fields = ['id', 'kruzhok_name', 'school', 'teacher', 'photo', 'purpose', 'lessons', 'teacher_id']
@@ -371,7 +370,6 @@ class KruzhokSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         lessons_data = validated_data.pop('lessons', [])
         teacher_id = validated_data.pop('teacher_id', None)
-        photo = validated_data.pop('photo', None)
 
         instance.kruzhok_name = validated_data.get('kruzhok_name', instance.kruzhok_name)
         instance.purpose = validated_data.get('purpose', instance.purpose)
@@ -384,16 +382,16 @@ class KruzhokSerializer(serializers.ModelSerializer):
             except Teacher.DoesNotExist:
                 pass
 
-        if photo:
-            instance.photo = photo
-
-        instance.save()
-
         instance.lessons.all().delete()
         lesson_order_counter = 1
         for lesson_data in lessons_data:
             Lesson.objects.create(kruzhok=instance, lesson_order=lesson_order_counter, **lesson_data)
             lesson_order_counter += 1
+
+        if 'photo' in validated_data:
+            instance.photo = validated_data['photo']
+
+        instance.save()
 
         return instance
 

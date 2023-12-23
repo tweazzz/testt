@@ -467,6 +467,17 @@ class SpecialityHistoryViewSet(viewsets.ModelViewSet):
     serializer_class = SpecialityHistorySerializer
     permission_classes = [IsAdminSchool]
 
+from rest_framework.parsers import MultiPartParser, FormParser
+class PhotoUploadMixin(viewsets.ModelViewSet):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=201, headers=headers)
+
 class KruzhokListApi(viewsets.ModelViewSet):
     queryset = Kruzhok.objects.all()
     serializer_class = KruzhokSerializer
