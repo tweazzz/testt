@@ -122,7 +122,7 @@ class Class(models.Model):
     class_name = models.CharField(max_length=150)
     school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
     classroom = models.ForeignKey('Classrooms', on_delete=models.CASCADE, null=True)
-    class_teacher = models.OneToOneField(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name='class_teacher')
+    class_teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name='class_teacher')
     KZ = 'KZ'
     RU = 'RU'
     lang_choices = [
@@ -139,6 +139,14 @@ class Class(models.Model):
     dopurok_plan = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 20)],null=True)
     dopurok_smena = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 5)],null=True)
 
+    @property
+    def class_number(self):
+        try:
+            number = int(''.join(filter(str.isdigit, self.class_name)))
+            return str(number)
+        except ValueError:
+            return None
+    
     class Meta:
         verbose_name_plural = 'Classes'
 
@@ -234,16 +242,18 @@ class DopUrok(models.Model):
         choices=WEEK_DAY_CHOICES,
         default=Monday,
     )
-    faculative_name = models.CharField(max_length=200)
-    ring = models.ForeignKey('Ring', on_delete=models.CASCADE,null=True)
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE, null=True)
     classl = models.ForeignKey('Class', on_delete=models.CASCADE, null=True)
     teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True)
+    ring = models.ForeignKey('Ring', on_delete=models.CASCADE,null=True)
     classroom = models.ForeignKey('Classrooms', on_delete=models.CASCADE, null=True)
+    teacher2 = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True,blank=True, related_name='teacher2')
+    classroom2 = models.ForeignKey('Classrooms', on_delete=models.CASCADE, null=True,blank=True, related_name='classroom2')
+    subject2 = models.ForeignKey('Subject', on_delete=models.CASCADE, null=True, blank=True, related_name='subject2')
     typez = models.ForeignKey('Extra_Lessons', on_delete=models.CASCADE, null=True,blank=True)
 
-
     def __str__(self):
-        return f'{self.school} - {self.classl} - {self.week_day} - {self.faculative_name}'
+        return f'{self.school} {self.classl} - {self.week_day}'
 
 
 
@@ -350,6 +360,7 @@ class Subject(models.Model):
 
 class schoolPasport(models.Model):
     school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
+    photo = models.ImageField(null=True)
     established = models.IntegerField(default=2008)
     school_address = models.CharField(max_length=250)
     amount_of_children = models.IntegerField()
@@ -536,10 +547,10 @@ class Extra_Lessons(models.Model):
 #             History
 
 class JobHistory(models.Model):
-    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True)
+    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=False)
     start_date = models.DateField()
-    end_date = models.DateField(max_length=200)
-    job_characteristic = models.TextField(default='')
+    end_date = models.DateField()
+    job_characteristic = models.TextField()
 
     class Meta:
         verbose_name_plural = "Job History"
@@ -549,7 +560,7 @@ class JobHistory(models.Model):
 
 
 class SpecialityHistory(models.Model):
-    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True)
+    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=False)
     end_date = models.DateField()
     speciality_university = models.TextField()
     srednee = "Среднее"
@@ -606,11 +617,7 @@ class Lesson(models.Model):
         choices=Kruzhok.WEEK_DAY_CHOICES,
         default=Kruzhok.Monday,
     )
-    start_end_time = models.CharField(max_length=150, default="8:00-8:45")
-    lesson_order = models.PositiveIntegerField(default=1)
-
-    class Meta:
-        unique_together = ['kruzhok', 'week_day', 'start_end_time', 'lesson_order']
+    start_end_time = models.CharField(max_length=150)
 
     def __str__(self):
         return f'{self.kruzhok.kruzhok_name} - {self.week_day} {self.start_end_time}'
