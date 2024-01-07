@@ -5,7 +5,6 @@ from .models import *
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.contrib.auth import get_user_model
 
-
 class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admin
@@ -90,7 +89,7 @@ class AvailableTeacherSerializer(serializers.ModelSerializer):
 class AvailableRingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ring
-        fields = ['id', 'start_time', 'end_time']
+        fields = ['id', 'start_time', 'end_time','plan','smena','number']
 
 class AvailableSubjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -557,7 +556,7 @@ class TeacherWriteSerializer(serializers.ModelSerializer):
             SpecialityHistory.objects.create(teacher=instance, **speciality_data)
 
         return instance
-    
+
     def to_representation(self, instance):
         representation = super(TeacherWriteSerializer, self).to_representation(instance)
         for job_history_entry in representation.get('job_history', []):
@@ -589,7 +588,7 @@ class LessonWriteSerializer(serializers.ModelSerializer):
 
 class KruzhokReadSerializer(serializers.ModelSerializer):
     teacher = AvailableTeacherSerializer(read_only=True)
-    lessons = LessonReadSerializer(many=True, read_only=True)  # Используйте LessonReadSerializer
+    lessons = LessonReadSerializer(many=True, read_only=True)
 
     class Meta:
         model = Kruzhok
@@ -598,7 +597,7 @@ class KruzhokReadSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super(KruzhokReadSerializer, self).to_representation(instance)
-        
+
         teacher_data = AvailableTeacherSerializer(instance.teacher).data
         representation['teacher'] = {
             'id': teacher_data.get('id'),
@@ -675,13 +674,13 @@ class KruzhokWriteSerializer(serializers.ModelSerializer):
 
         return instance
 
-class PhotoforNews(serializers.ModelSerializer):
+class PhotoforNewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PhotoforNews
         fields = ['image']
 
 class NewsSerializer(serializers.ModelSerializer):
-    photos = PhotoforNews(many=True, read_only=True)
+    photos = serializers.ListField(child=serializers.ImageField(), write_only=True, required=False)
 
     class Meta:
         model = News
@@ -689,11 +688,16 @@ class NewsSerializer(serializers.ModelSerializer):
         read_only_fields = ['school']
 
     def create(self, validated_data):
-        photos_data = self.context.get('request').data.get('photos', [])
+        photos_data = validated_data.pop('photos', [])
+
+        for photo in photos_data:
+            if not photo.content_type.startswith('image'):
+                raise serializers.ValidationError("Файл не является изображением.")
+
         news_instance = News.objects.create(**validated_data)
 
-        for photo_data in photos_data:
-            PhotoforNews.objects.create(news=news_instance, **photo_data)
+        for photo in photos_data:
+            PhotoforNews.objects.create(news=news_instance, image=photo)
 
         return news_instance
 
@@ -705,7 +709,6 @@ class NewsSerializer(serializers.ModelSerializer):
     def get_absolute_photo_urls(self, photos_queryset):
         request = self.context['request']
         return [request.build_absolute_uri(photo.image.url) if photo.image else None for photo in photos_queryset]
-
 
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -924,3 +927,15 @@ class ScheduleSerializer(serializers.ModelSerializer):
         del representation['typez_id']
 
         return representation
+    
+class NotificationsSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d, %H:%M")
+
+    class Meta:
+        model = Notifications
+        fields = ['id', 'text', 'created_at', 'school']
+
+class SchoolMapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SchoolMap
+        fields = '__all__'

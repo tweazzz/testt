@@ -32,8 +32,8 @@ router.register(r'api/ringApi', RingApi)
 router.register(r'api/DopUrokApi', DopUrokApi)
 router.register(r'api/DopUrokRingApi', DopUrokRingApi)
 router.register(r'api/newsApi', NewsApi)
-router.register(r'api/teacher-read', TeacherReadApi, basename='teacher-read')
-router.register(r'api/kruzhok/read-only', ReadOnlyKruzhokApi,basename='kruzhok-read')
+router.register(r'api/notification', NotificationsApi)
+router.register(r'api/schoolmap', SchoolMapApi)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -49,6 +49,7 @@ urlpatterns = [
     path('api/kruzhok/upload_photo/', KruzhokListApi.as_view({'post': 'upload_photo'}), name='upload_photo'),
     path('api/teacher/upload_photo/', TeacherApi.as_view({'post': 'upload_photo'}), name='upload_photo'),
     path('api/schoolpasport/upload_photo/', schoolPasportApi.as_view({'post': 'upload_photo'}), name='upload_photo'),
+    path('get_posts_data/', GetPostsDataView.as_view(), name='get_posts_data'),
     
 ]
 

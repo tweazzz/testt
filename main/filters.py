@@ -141,3 +141,14 @@ class SliderFilter(filters.FilterSet):
         model = Slider
         fields = '__all__'
         exclude = ['slider_photo']
+
+
+class AvailableClassesFilter(filters.FilterSet):
+    class Meta:
+        model = Class
+        fields = ['id','class_name','class_number']
+
+class AvailableRingFilter(filters.FilterSet):
+    class Meta:
+        model = Ring
+        fields = ['id','start_time','end_time']

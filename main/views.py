@@ -23,12 +23,13 @@ class AdminsApi(viewsets.ModelViewSet):
 class PhotoUploadMixin(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser,JSONParser)
     model = None
-
-    @action(detail=False, methods=['post'])
+    photo_field = None
+    
+    @action(detail=False, methods=['post','put'])
     def upload_photo(self, request, *args, **kwargs):
         obj_id = request.data.get('id')
         obj = get_object_or_404(self.model, id=obj_id)
-        obj.photo = request.data.get('photo')
+        setattr(obj, self.photo_field, request.data.get(self.photo_field))
         obj.save()
         serializer = self.get_serializer(obj)
         return Response(serializer.data)
@@ -67,10 +68,7 @@ class ClassroomApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Classrooms.objects.all()
-            else:
-                return Classrooms.objects.filter(school=self.request.user.school)
+            return Classrooms.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Classrooms.objects.all()
         return Classrooms.objects.all()
 
     @action(detail=False, methods=['get'])
@@ -99,10 +97,7 @@ class ClassApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Class.objects.all()
-            else:
-                return Class.objects.filter(school=self.request.user.school)
+            return Class.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Class.objects.all()
         return Class.objects.all()
 
 class ScheduleApi(viewsets.ModelViewSet):
@@ -118,21 +113,20 @@ class ScheduleApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Schedule.objects.all()
-            else:
-                return Schedule.objects.filter(school=self.request.user.school)
+            return Schedule.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Schedule.objects.all()
         return Schedule.objects.all()
-
+    
     @action(detail=False, methods=['get'])
     def available_ring(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
             if self.request.user.is_superuser:
-                classroom = Ring.objects.all()
+                ring = Ring.objects.all()
             else:
-                classroom = Ring.objects.filter(school=self.request.user.school)
+                ring = Ring.objects.filter(school=self.request.user.school)
 
-            serializer = AvailableRingSerializer(classroom, many=True)
+            ring_filter = AvailableRingFilter(request.GET, queryset=ring)
+            serializer = AvailableRingSerializer(ring_filter.qs, many=True)
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
@@ -165,10 +159,7 @@ class MenuApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Menu.objects.all()
-            else:
-                return Menu.objects.filter(school=self.request.user.school)
+            return Menu.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Menu.objects.all()
         return Menu.objects.all()
 
 
@@ -186,10 +177,7 @@ class SliderApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Slider.objects.all()
-            else:
-                return Slider.objects.filter(school=self.request.user.school)
+            return Slider.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Slider.objects.all()
         return Slider.objects.all()
 
 
@@ -207,14 +195,13 @@ class SubjectApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Subject.objects.all()
-            else:
-                return Subject.objects.filter(school=self.request.user.school)
+            return Subject.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Subject.objects.all()
         return Subject.objects.all()
 
 
 class schoolPasportApi(PhotoUploadMixin,viewsets.ModelViewSet):
+    model = schoolPasport
+    photo_field = 'photo'
     queryset = schoolPasport.objects.all()
     serializer_class = schoolPasportApiSerializer
     permission_classes = [IsAdminSchool]
@@ -227,10 +214,7 @@ class schoolPasportApi(PhotoUploadMixin,viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return schoolPasport.objects.all()
-            else:
-                return schoolPasport.objects.filter(school=self.request.user.school)
+            return schoolPasport.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else schoolPasport.objects.all()
         return schoolPasport.objects.all()
 
 
@@ -247,10 +231,7 @@ class School_AdministrationApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return School_Administration.objects.all()
-            else:
-                return School_Administration.objects.filter(school=self.request.user.school)
+            return School_Administration.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else School_Administration.objects.all()
         return School_Administration.objects.all()
 
 
@@ -267,10 +248,7 @@ class Sport_SuccessApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Sport_Success.objects.all()
-            else:
-                return Sport_Success.objects.filter(school=self.request.user.school)
+            return Sport_Success.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Sport_Success.objects.all()
         return Sport_Success.objects.all()
 
     @action(detail=False, methods=['get'])
@@ -281,7 +259,8 @@ class Sport_SuccessApi(viewsets.ModelViewSet):
             else:
                 classes = Class.objects.filter(school=self.request.user.school)
 
-            serializer = AvailableClassesSerializer(classes, many=True)
+            classes_filter = AvailableClassesFilter(request.GET, queryset=classes)
+            serializer = AvailableClassesSerializer(classes_filter.qs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
@@ -300,11 +279,9 @@ class Oner_SuccessApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Oner_Success.objects.all()
-            else:
-                return Oner_Success.objects.filter(school=self.request.user.school)
+            return Oner_Success.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Oner_Success.objects.all()
         return Oner_Success.objects.all()
+    
     @action(detail=False, methods=['get'])
     def available_classes(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
@@ -332,11 +309,9 @@ class PandikOlimpiadaApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return PandikOlimpiada_Success.objects.all()
-            else:
-                return PandikOlimpiada_Success.objects.filter(school=self.request.user.school)
+            return PandikOlimpiada_Success.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else PandikOlimpiada_Success.objects.all()
         return PandikOlimpiada_Success.objects.all()
+    
     @action(detail=False, methods=['get'])
     def available_classes(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
@@ -364,10 +339,7 @@ class School_RedCertificateApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return RedCertificate.objects.all()
-            else:
-                return RedCertificate.objects.filter(school=self.request.user.school)
+            return RedCertificate.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else RedCertificate.objects.all()
         return RedCertificate.objects.all()
 
 
@@ -384,12 +356,9 @@ class School_AltynBelgiApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return AltynBelgi.objects.all()
-            else:
-                return AltynBelgi.objects.filter(school=self.request.user.school)
+            return AltynBelgi.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else AltynBelgi.objects.all()
         return AltynBelgi.objects.all()
-
+    
 class School_SocialMediaApi(viewsets.ModelViewSet):
     queryset = School_SocialMedia.objects.all()
     serializer_class = School_SocialMediaSerializer
@@ -403,10 +372,7 @@ class School_SocialMediaApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return School_SocialMedia.objects.all()
-            else:
-                return School_SocialMedia.objects.filter(school=self.request.user.school)
+            return School_SocialMedia.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else School_SocialMedia.objects.all()
         return School_SocialMedia.objects.all()
 
 
@@ -423,10 +389,7 @@ class School_DirectorApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return School_Director.objects.all()
-            else:
-                return School_Director.objects.filter(school=self.request.user.school)
+            return School_Director.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else School_Director.objects.all()
         return School_Director.objects.all()
 
 
@@ -443,10 +406,7 @@ class Extra_LessonsApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Extra_Lessons.objects.all()
-            else:
-                return Extra_Lessons.objects.filter(school=self.request.user.school)
+            return Extra_Lessons.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Extra_Lessons.objects.all()
         return Extra_Lessons.objects.all()
 
     @action(detail=False, methods=['get'])
@@ -476,57 +436,35 @@ class RingApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Ring.objects.all()
-            else:
-                return Ring.objects.filter(school=self.request.user.school)
+            return Ring.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Ring.objects.all()
         return Ring.objects.all()
 
 
 
-class TeacherApi(PhotoUploadMixin,viewsets.ModelViewSet):
+class TeacherApi(PhotoUploadMixin, viewsets.ModelViewSet):
     model = Teacher
-    queryset = Teacher.objects.all()
     photo_field = 'photo3x4'
-    serializer_class = TeacherWriteSerializer
+    queryset = Teacher.objects.all()
     permission_classes = [IsAdminSchool]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TeacherFilter
 
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve','upload_photo']:
+            return TeacherReadSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return TeacherWriteSerializer
+        return self.serializer_class
+
     def perform_create(self, serializer):
-        print("Perform create method called.")
         if self.request.user.is_authenticated:
-            print(f"Authenticated user: {self.request.user}")
             if self.request.user.school:
                 serializer.validated_data['school'] = self.request.user.school
-                print(f"School set: {self.request.user.school}")
-            else:
-                print("User has no associated school.")
-        
-        print(f"Data received by the serializer: {self.request.data}")
-
         serializer.save()
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Teacher.objects.all()
-            else:
-                return Teacher.objects.filter(school=self.request.user.school)
-        return Teacher.objects.all()
-
-class TeacherReadApi(viewsets.ReadOnlyModelViewSet):
-    queryset = Teacher.objects.all()
-    serializer_class = TeacherReadSerializer
-    permission_classes = [IsAdminSchool]
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = TeacherFilter
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return Teacher.objects.all()
-            else:
-                return Teacher.objects.filter(school=self.request.user.school)
+            return Teacher.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Teacher.objects.all()
         return Teacher.objects.all()
 
 class TeacherWorkloadApi(viewsets.ModelViewSet):
@@ -543,14 +481,23 @@ class TeacherWorkloadApi(viewsets.ModelViewSet):
 
 
 class KruzhokListApi(PhotoUploadMixin, viewsets.ModelViewSet):
+    model = Kruzhok
+    photo_field = 'photo'
     queryset = Kruzhok.objects.all()
-    serializer_class = KruzhokWriteSerializer  
     permission_classes = [IsAdminSchool]
     filter_backends = [DjangoFilterBackend]
     filterset_class = KruzhokFilter
 
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve','upload_photo']:
+            return KruzhokReadSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return KruzhokWriteSerializer
+        return self.serializer_class
+
     def perform_create(self, serializer):
-        serializer.save(school=self.request.user.school)
+        if self.request.user.is_authenticated:
+            serializer.save(school=self.request.user.school)
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
@@ -559,8 +506,8 @@ class KruzhokListApi(PhotoUploadMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def available_teachers(self, request, *args, **kwargs):
-        teachers = Teacher.objects.all()
-        serializer = AvailableTeacherSerializer(teachers, many=True)
+        teachers = Teacher.objects.filter(school=request.user.school)
+        serializer = AvailableTeacherSerializer(teachers, many=True, context=self.get_serializer_context())
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
@@ -571,19 +518,6 @@ class KruzhokListApi(PhotoUploadMixin, viewsets.ModelViewSet):
         self.perform_destroy(instance)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-class ReadOnlyKruzhokApi(PhotoUploadMixin, mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    queryset = Kruzhok.objects.all()
-    serializer_class = KruzhokReadSerializer
-    permission_classes = [IsAdminSchool]
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = KruzhokFilter
-
-    @action(detail=False, methods=['get'])
-    def available_teachers(self, request, *args, **kwargs):
-        teachers = Teacher.objects.all()
-        serializer = AvailableTeacherSerializer(teachers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class DopUrokApi(viewsets.ModelViewSet):
     queryset = DopUrok.objects.all()
@@ -598,10 +532,7 @@ class DopUrokApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return DopUrok.objects.all()
-            else:
-                return DopUrok.objects.filter(school=self.request.user.school)
+            return DopUrok.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else DopUrok.objects.all()
         return DopUrok.objects.all()
 
 
@@ -618,12 +549,8 @@ class DopUrokRingApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return DopUrokRing.objects.all()
-            else:
-                return DopUrokRing.objects.filter(school=self.request.user.school)
+            return DopUrokRing.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else DopUrokRing.objects.all()
         return DopUrokRing.objects.all()
-
 
 class NewsApi(viewsets.ModelViewSet):
     queryset = News.objects.all()
@@ -638,8 +565,68 @@ class NewsApi(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            if self.request.user.is_superuser:
-                return News.objects.all()
-            else:
-                return News.objects.filter(school=self.request.user.school)
+            return News.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else News.objects.all()
         return News.objects.all()
+    
+class NotificationsApi(viewsets.ModelViewSet):
+    queryset = Notifications.objects.all()
+    serializer_class = NotificationsSerializer
+    permission_classes = [IsAdminSchool]
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(school=self.request.user.school)
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Notifications.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else Notifications.objects.all()
+        return Notifications.objects.all()
+    
+class SchoolMapApi(viewsets.ModelViewSet):
+    queryset = SchoolMap.objects.all()
+    serializer_class = SchoolMapSerializer
+    permission_classes = [IsAdminSchool]
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(school=self.request.user.school)
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return SchoolMap.objects.filter(school=self.request.user.school) if not self.request.user.is_superuser else SchoolMap.objects.all()
+        return SchoolMap.objects.all()
+    
+
+import pickle
+from django.http import JsonResponse
+from django.views import View
+import os
+
+class GetPostsDataView(View):
+    def get(self, request, *args, **kwargs):
+        pickle_directory = 'main'  # Замените на реальный путь
+
+        all_accounts_data = {}
+
+        try:
+            for filename in os.listdir(pickle_directory):
+                if filename.endswith('_posts_data.pickle'):
+                    pickle_file_path = os.path.join(pickle_directory, filename)
+                    
+                    with open(pickle_file_path, 'rb') as pickle_in:
+                        account_data = pickle.load(pickle_in)
+                    
+                    # Извлекаем имя аккаунта из имени файла
+                    account_name = filename.replace('_posts_data.pickle', '')
+                    
+                    # Добавляем данные постов к соответствующему аккаунту в словаре
+                    all_accounts_data.setdefault(account_name, []).extend(account_data)
+
+            # Дополнительная обработка данных, если необходимо
+
+            return JsonResponse({'accounts_data': all_accounts_data})
+
+        except FileNotFoundError:
+            return JsonResponse({'error': 'File not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

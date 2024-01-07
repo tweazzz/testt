@@ -14,7 +14,7 @@ class Admin(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_('username'), max_length=30, unique=True)
     password = models.CharField(_('password'), max_length=128)
 
-    school = models.OneToOneField('School', on_delete=models.CASCADE, null=True, blank=True, related_name='admin_user')
+    school = models.OneToOneField('School', on_delete=models.CASCADE, null=True, related_name='admin_user')
     date_joined = models.DateTimeField(default=timezone.now, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
@@ -29,6 +29,10 @@ class Admin(AbstractBaseUser, PermissionsMixin):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        if self.school and not self.school.user_id:
+            self.school.user_id = self.id
+            self.school.save()
+            print(f"School's user_id set to {self.id}")
 
     def __str__(self):
         return f'{self.email}'
@@ -52,16 +56,10 @@ class School(models.Model):
         choices=timezone_choices,
         default=GMT_5,
     )
-    user = models.OneToOneField('Admin', on_delete=models.CASCADE, null=True, related_name='school_user')
+    user = models.OneToOneField('Admin', on_delete=models.CASCADE, blank=True, null=True, related_name='school_user')
 
     class Meta:
         verbose_name_plural = 'Schools'
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.user and not self.user.school_id:
-            self.user.school = self
-            self.user.save()
 
     def __str__(self):
         return f'{self.school_kz_name}'
@@ -120,6 +118,7 @@ class Teacher(models.Model):
 
 class Class(models.Model):
     class_name = models.CharField(max_length=150)
+    class_number = models.CharField(max_length=255, editable=False, null=True, blank=True)
     school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
     classroom = models.ForeignKey('Classrooms', on_delete=models.CASCADE, null=True)
     class_teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name='class_teacher')
@@ -139,13 +138,12 @@ class Class(models.Model):
     dopurok_plan = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 20)],null=True)
     dopurok_smena = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 5)],null=True)
 
-    @property
-    def class_number(self):
-        try:
-            number = int(''.join(filter(str.isdigit, self.class_name)))
-            return str(number)
-        except ValueError:
-            return None
+    def save(self, *args, **kwargs):
+        if self.class_name:
+            numbers = [int(s) for s in self.class_name if s.isdigit()]
+            self.class_number = ''.join(map(str, numbers))
+            self.class_name = self.class_name.strip()
+        super().save(*args, **kwargs)
     
     class Meta:
         verbose_name_plural = 'Classes'
@@ -378,9 +376,9 @@ class schoolPasport(models.Model):
     number_of_5_9_students = models.IntegerField()
     number_of_5_9_classes = models.IntegerField()
     number_of_10_11_students = models.IntegerField()
-    number_of_10_11_classes = models.CharField(max_length=20)
-    amount_of_family = models.CharField(max_length=20)
-    amount_of_parents = models.CharField(max_length=20)
+    number_of_10_11_classes = models.IntegerField()
+    amount_of_family = models.IntegerField()
+    amount_of_parents = models.IntegerField()
     all_pedagog_number = models.IntegerField(null=True)
     pedagog_sheber = models.IntegerField(null=True)
     pedagog_zertteushy = models.IntegerField(null=True)
@@ -404,16 +402,16 @@ class School_SocialMedia(models.Model):
     school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
     INSTAGRAM = 'instagram'
     FACEBOOK = 'facebook'
-    website = 'website'
+    youtube = 'Youtube'
     SOCIAL_MEDIA_CHOICES = [
         (INSTAGRAM, 'Instagram'),
         (FACEBOOK, 'Facebook'),
-        (website, 'website'),
+        (youtube, 'Youtube'),
     ]
     type = models.CharField(
         max_length=10,
         choices=SOCIAL_MEDIA_CHOICES,
-        default=website,
+        default=youtube,
     )
     account_name = models.CharField(max_length=250)
     class Meta:
@@ -621,3 +619,41 @@ class Lesson(models.Model):
 
     def __str__(self):
         return f'{self.kruzhok.kruzhok_name} - {self.week_day} {self.start_end_time}'
+    
+
+class Notifications(models.Model):
+    school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
+    text = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        verbose_name_plural = "Notifications"
+
+    def __str__(self):
+        return f'{self.school} + {self.created_at.strftime("%Y-%m-%d %H:%M:%S")}'
+
+
+def validate_file_extension(value):
+    import os
+    from django.core.exceptions import ValidationError
+
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg']
+
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension. Please upload a valid image or SVG file.')
+    
+class SchoolMap(models.Model):
+    school = models.ForeignKey('School', on_delete=models.CASCADE, null=True)
+    map = models.FileField(upload_to='uploads/', validators=[validate_file_extension])
+    flat1 = models.FileField(upload_to='uploads/', validators=[validate_file_extension])
+    flat2 = models.FileField(upload_to='uploads/', validators=[validate_file_extension], null=True, blank=True)
+    flat3 = models.FileField(upload_to='uploads/', validators=[validate_file_extension], null=True, blank=True)
+    flat4 = models.FileField(upload_to='uploads/', validators=[validate_file_extension], null=True, blank=True)
+    flat5 = models.FileField(upload_to='uploads/', validators=[validate_file_extension], null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "SchoolMap"
+
+    def __str__(self):
+        return f'{self.school}'
