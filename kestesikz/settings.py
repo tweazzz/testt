@@ -26,13 +26,16 @@ SECRET_KEY = 'django-insecure-&b0+q0f*+4z+ruo)u#%yy$!-o2h+qq7zq-vmzd!157s)2p&ye(
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CORS_ALLOWED_ORIGINS = []
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'main',
+    'auth_user',
+    'admin_app',
+    'client',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,9 +50,10 @@ INSTALLED_APPS = [
     'djoser',
 ]
 
+
 # AUTH
-AUTH_USER_MODEL = 'main.Admin'
-AUTHENTICATION_BACKENDS = ['main.backends.EmailOrUsernameModelBackend', 'django.contrib.auth.backends.ModelBackend']
+AUTH_USER_MODEL = 'auth_user.User'
+AUTHENTICATION_BACKENDS = ['auth_user.backends.EmailOrUsernameModelBackend', 'django.contrib.auth.backends.ModelBackend']
 
 
 REST_FRAMEWORK = {
@@ -150,9 +154,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = '/var/www/kestesikz/static'
+STATIC_ROOT = '/kestesikz/static'
 
-MEDIA_ROOT = '/var/www/kestesikz/media/'
+MEDIA_ROOT = '/kestesikz/media/'
 MEDIA_URL = '/media/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
