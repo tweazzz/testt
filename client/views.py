@@ -21,7 +21,7 @@ class SchoolsApi(viewsets.ModelViewSet):
     permission_classes = [IsSuperAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = SchoolFilter
-
+    http_method_names = ['get','head','options']
 
 class ClassroomApi(viewsets.ModelViewSet):
     queryset = Classrooms.objects.all()

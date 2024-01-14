@@ -1,9 +1,3 @@
-# client/urls.py
-from django.urls import path, include,re_path
-# from client.views import ClientUserListView
-from djoser.views import TokenCreateView 
-from auth_user.views import AdminUserCreateView
-
 from django.urls import path, include,re_path
 from admin_app.views import *
 from rest_framework import routers
@@ -11,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from auth_user.views import UserListView
 from djoser.views import TokenCreateView
+from auth_user.views import AdminUserCreateView
 
 
 router = routers.DefaultRouter()

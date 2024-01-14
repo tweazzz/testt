@@ -1,7 +1,6 @@
 # client/urls.py
 from django.urls import path, include,re_path
-# from client.views import ClientUserListView
-from djoser.views import TokenCreateView 
+from djoser.views import TokenCreateView
 from auth_user.views import ClientUserCreateView
 from rest_framework import routers
 from .views import *

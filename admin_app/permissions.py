@@ -8,7 +8,7 @@ class IsAdminSchool(permissions.BasePermission):
             return True
         if request.user.is_anonymous:
             return request.method in permissions.SAFE_METHODS
-        elif request.user.is_staff:
+        elif request.user.is_authenticated and request.user.role == 'admin':
             return request.user.school_id == request.user.school_id
         return False
 
